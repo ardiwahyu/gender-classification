@@ -12,22 +12,6 @@ import pydub
 import numpy as np
 import os
 
-base_dir = '/Users/ARDI/Documents/Python Scripts/ML/data/gender'
-
-train_dir = os.path.join(base_dir, 'train_data')
-val_dir = os.path.join(base_dir, 'val_data')
-
-male_train_dir = os.path.join(train_dir, 'male')
-female_train_dir = os.path.join(train_dir, 'female')
-
-male_val_dir = os.path.join(val_dir, 'male')
-female_val_dir = os.path.join(val_dir, 'female')
-
-male_train = [os.path.join(male_train_dir, f) for f in os.listdir(male_train_dir)]
-female_train = [os.path.join(female_train_dir, f) for f in os.listdir(female_train_dir)]
-male_val = [os.path.join(male_val_dir, f) for f in os.listdir(male_val_dir)]
-female_val = [os.path.join(female_val_dir, f) for f in os.listdir(female_val_dir)]
-
 def read(f, normalized=False):
     a = pydub.AudioSegment.from_wav(f)
     y = np.array(a.get_array_of_samples())
@@ -38,7 +22,23 @@ def read(f, normalized=False):
     else:
         return a.frame_rate, y
     
-def load_data(length=10000):
+def load_data(length=10000):  
+    base_dir = '/Users/ARDI/Documents/Python Scripts/ML/data/gender'
+    
+    train_dir = os.path.join(base_dir, 'train_data')
+    val_dir = os.path.join(base_dir, 'val_data')
+    
+    male_train_dir = os.path.join(train_dir, 'male')
+    female_train_dir = os.path.join(train_dir, 'female')
+    
+    male_val_dir = os.path.join(val_dir, 'male')
+    female_val_dir = os.path.join(val_dir, 'female')
+    
+    male_train = [os.path.join(male_train_dir, f) for f in os.listdir(male_train_dir)]
+    female_train = [os.path.join(female_train_dir, f) for f in os.listdir(female_train_dir)]
+    male_val = [os.path.join(male_val_dir, f) for f in os.listdir(male_val_dir)]
+    female_val = [os.path.join(female_val_dir, f) for f in os.listdir(female_val_dir)]
+
     x_train = np.zeros((len(male_train)+len(female_train), length))
     y_train = np.zeros((len(male_train)+len(female_train), 1))
     for i, f in enumerate(male_train):
@@ -63,9 +63,9 @@ def load_data(length=10000):
         
     return x_train, y_train, x_val, y_val
     
-def create_model(length=10000):
+def create_model(summary=True, length=10000):
     model = Sequential()
-    model.add(Dense(256, input_shape=(10000,)))
+    model.add(Dense(256, input_shape=(length,)))
     model.add(Dropout(0.3))
     model.add(Dense(256, activation="relu"))
     model.add(Dropout(0.3))
@@ -77,22 +77,17 @@ def create_model(length=10000):
     model.add(Dropout(0.3))
     model.add(Dense(1, activation="sigmoid"))
     model.compile(loss="binary_crossentropy", metrics=["accuracy"], optimizer="adam")
-    model.summary()
+    if summary:
+        model.summary()
     return model
 
-model = create_model()
-
-tensorboard = TensorBoard(log_dir="logs")
-early_stopping = EarlyStopping(mode="min", patience=5, restore_best_weights=True)
-x_train, y_train, x_val, y_val = load_data()
-model.fit(x_train, y_train, epochs=20, steps_per_epoch=100,
-          validation_data=(x_val, y_val),
-          verbose=2, callbacks=[tensorboard, early_stopping])
-
-test_path = female_val[0]
-fr, sound = read(test_path)
-classes = model.predict(np.vstack([sound[:10000]]), batch_size=10)
-if classes == 0:
-    print('male')
-else:
-    print("female")
+def start_train():
+    model = create_model()
+    
+    tensorboard = TensorBoard(log_dir="logs")
+    early_stopping = EarlyStopping(mode="min", patience=5, restore_best_weights=True)
+    x_train, y_train, x_val, y_val = load_data()
+    model.fit(x_train, y_train, epochs=20, steps_per_epoch=100,
+              validation_data=(x_val, y_val),
+              verbose=2, callbacks=[tensorboard, early_stopping])
+    model.save("model/model.h5")
