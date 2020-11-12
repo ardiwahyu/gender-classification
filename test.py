@@ -18,13 +18,14 @@ model_dir = 'model/model.h5'
 
 def start_test():
     Tk().withdraw()
-    filename = askopenfilename()
+    filename = askopenfilename(filetypes=[("Audio files (.wav)", "*.wav")])
     if filename != '':
         print(filename)
         model = training.create_model(summary=False)
         model.load_weights(model_dir)
         fr, sound = training.read(filename)
-        classes = model.predict(np.vstack([sound[:10000]]), batch_size=10)
+        classes = model.predict(np.vstack([sound[:10000]]), batch_size=10)[0][0]
+        print(classes)
         if classes == 0:
             print('male')
         else:
