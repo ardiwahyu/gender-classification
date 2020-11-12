@@ -81,13 +81,14 @@ def create_model(summary=True, length=10000):
         model.summary()
     return model
 
-def start_train():
+def start_train(stop_early=True):
     model = create_model()
     
     tensorboard = TensorBoard(log_dir="logs")
     early_stopping = EarlyStopping(mode="min", patience=5, restore_best_weights=True)
     x_train, y_train, x_val, y_val = load_data()
+    callbacks = [tensorboard, early_stopping] if stop_early else [tensorboard]
     model.fit(x_train, y_train, epochs=20, steps_per_epoch=100,
               validation_data=(x_val, y_val),
-              verbose=2, callbacks=[tensorboard, early_stopping])
+              verbose=2, callbacks=callbacks)
     model.save("model/model.h5")

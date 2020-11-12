@@ -24,17 +24,16 @@ def start_test():
         model = training.create_model(summary=False)
         model.load_weights(model_dir)
         fr, sound = training.read(filename)
-        classes = model.predict(np.vstack([sound[:10000]]), batch_size=10)[0][0]
-        print(classes)
-        if classes == 0:
-            print('male')
-        else:
-            print('female')
+        female_prob = model.predict(np.vstack([sound[:10000]]), batch_size=10)[0][0]
+        male_prob = 1 - female_prob
+        gender = "male" if male_prob > female_prob else "female"
+        print("Result: ", gender)
+        print(f"Probabilities: Male: {male_prob*100:.2f}%    Female: {female_prob*100:.2f}%")
     else:
         print('Tidak ada file yang dipilih')
         
 if (os.path.isfile(model_dir)):
     start_test()
 else:
-    training.start_train()
+    training.start_train(False)
     start_test()
